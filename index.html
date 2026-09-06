@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CS2 Ultimate Simulator & Admin Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --bg-dark: #07080b;
+      --panel-bg: rgba(18, 21, 31, 0.85);
+      --border-glow: rgba(255, 255, 255, 0.08);
+      --accent: #ff9d00;
+      --accent-glow: rgba(255, 157, 0, 0.4);
+      --text: #f0f3f8;
+      --text-dim: #7d8b9e;
+      --danger: #eb4b4b;
+
+      --rarity-uncommon: #5e98d9;
+      --rarity-rare: #4b69ff;
+      --rarity-mythical: #d32ce6;
+      --rarity-legendary: #eb4b4b;
+      --rarity-ancient: #caab05;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; user-select: none; }
+    h1, h2, h3, h4, .logo, .price, .btn { font-family: 'Rajdhani', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    body {
+      background: var(--bg-dark);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(255, 157, 0, 0.1) 0%, transparent 60%),
+        radial-gradient(circle at 90% 100%, rgba(211, 44, 230, 0.05) 0%, transparent 50%);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    #authModal {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+
+    .auth-box {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-glow);
+      border-radius: 16px;
+      padding: 35px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 0 30px rgba(0,0,0,0.8);
+      text-align: center;
+    }
+
+    .auth-box input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--border-glow);
+      color: #fff;
+      border-radius: 8px;
+      outline: none;
+    }
+
+    .auth-box input:focus { border-color: var(--accent); }
+
+    header {
+      background: rgba(10, 12, 18, 0.9);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-glow);
+      padding: 12px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .logo { font-size: 26px; font-weight: 700; color: var(--accent); text-shadow: 0 0 12px var(--accent-glow); }
+
+    .btn {
+      background: linear-gradient(135deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0.01) 100%);
+      color: var(--text);
+      border: 1px solid var(--border-glow);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.25s ease;
+    }
+
+    .btn:hover { border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); transform: translateY(-2px); }
+    .btn-accent { background: linear-gradient(135deg, #ff9d00 0%, #e67e00 100%); color: #000; border: none; box-shadow: 0 0 15px var(--accent-glow); }
+    .btn-danger { background: linear-gradient(135deg, #eb4b4b 0%, #c0392b 100%); color: #fff; border: none; }
+
+    .user-profile { display: flex; align-items: center; gap: 12px; background: rgba(0,0,0,0.5); padding: 6px 16px; border-radius: 30px; border: 1px solid var(--border-glow); }
+    .balance-box { font-weight: 700; color: #2ecc71; font-size: 18px; }
+
+    #banOverlay {
+      display: none;
+      position: fixed;
+      top:0; left:0; width:100%; height:100%;
+      background: rgba(0,0,0,0.95);
+      z-index: 9999;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: var(--danger);
+      text-align: center;
+      padding: 20px;
+    }
+
+    main { flex: 1; padding: 30px 20px; max-width: 1300px; margin: 0 auto; width: 100%; }
+
+    .nav-tabs { display: flex; gap: 10px; margin-bottom: 25px; border-bottom: 1px solid var(--border-glow); padding-bottom: 12px; overflow-x: auto; }
+    .tab-btn { background: none; border: none; color: var(--text-dim); font-size: 17px; font-weight: 700; padding: 10px 20px; cursor: pointer; border-radius: 8px; transition: all 0.3s; white-space: nowrap; }
+    .tab-btn.active { color: #fff; background: var(--panel-bg); border: 1px solid var(--border-glow); }
+
+    .page-content { display: none; }
+    .page-content.active { display: block; }
+
+    .cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; }
+
+    .case-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-glow);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .case-card:hover { transform: translateY(-8px); border-color: var(--accent); box-shadow: 0 0 20px var(--accent-glow); }
+
+    .roulette-wrapper { background: var(--panel-bg); border: 1px solid var(--border-glow); border-radius: 16px; padding: 30px; }
+    .roulette-container { position: relative; width: 100%; height: 180px; background: #050608; border: 2px solid var(--border-glow); border-radius: 12px; overflow: hidden; margin: 25px 0; }
+    .roulette-marker { position: absolute; left: 50%; top: 0; bottom: 0; width: 4px; background: var(--accent); z-index: 10; transform: translateX(-50%); box-shadow: 0 0 15px var(--accent); }
+    .roulette-track { display: flex; position: absolute; left: 0; top: 15px; height: 150px; will-change: transform; }
+
+    .item-card {
+      width: 140px; height: 150px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(0,0,0,0.4) 100%);
+      border: 1px solid var(--border-glow);
+      border-bottom: 4px solid var(--rarity-rare);
+      margin-right: 12px; flex-shrink: 0; border-radius: 10px;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 10px; text-align: center; cursor: pointer;
+    }
+    .item-card svg { width: 90px; height: 70px; }
+
+    .game-section { background: var(--panel-bg); border: 1px solid var(--border-glow); border-radius: 16px; padding: 25px; margin-bottom: 30px; text-align: center; }
+    .cards-container { display: flex; justify-content: center; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
+    .game-card-item { width: 110px; height: 150px; background: #0c0e14; border: 2px solid var(--border-glow); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 32px; cursor: pointer; transition: all 0.3s; }
+    .game-card-item:hover { transform: translateY(-8px); border-color: var(--accent); }
+
+    .inventory-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 15px; margin-top: 20px; }
+
+    .admin-card { background: rgba(0,0,0,0.4); border: 1px solid var(--border-glow); padding: 20px; border-radius: 12px; margin-top: 15px; }
+    .admin-input { padding: 8px 12px; background: #000; border: 1px solid var(--border-glow); color: #fff; border-radius: 6px; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; text-align: left; }
+    th, td { padding: 10px; border-bottom: 1px solid var(--border-glow); font-size: 14px; }
+    th { color: var(--accent); }
+  </style>
+</head>
+<body>
+
+  <div id="authModal">
+    <div class="auth-box">
+      <h2 style="color: var(--accent); margin-bottom: 15px;">Вхід / Реєстрація</h2>
+      <input type="text" id="authUsername" placeholder="Нікнейм..." autocomplete="off">
+      <input type="password" id="authPassword" placeholder="Пароль...">
+      <div style="display: flex; gap: 10px; margin-top: 15px;">
+        <button class="btn btn-accent" style="flex: 1;" onclick="handleLogin()">Увійти</button>
+        <button class="btn" style="flex: 1;" onclick="handleRegister()">Реєстрація</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="banOverlay">
+    <h1 id="banTitle">ВАШ АКАУНТ ЗАБАНЕНО!</h1>
+    <p id="banReason" style="margin-top:10px; color:#fff; font-size: 18px;">Заблоковано Адміністратором.</p>
+    <p id="banTimer" style="margin-top:15px; color:var(--accent); font-size: 22px; font-weight:700;"></p>
+    <button class="btn" style="margin-top:20px;" onclick="location.reload()">Оновити сторінку</button>
+  </div>
+
+  <header>
+    <div class="logo">⚡ CS2 SIMULATOR</div>
+    <div class="user-profile">
+      <span id="cabinetClicker" onclick="handleCabinetClick()" style="cursor:pointer; font-weight:700;">
+        <span id="userName">Гравець</span> 👤
+      </span>
+      <div class="balance-box"><span id="userBalance">0</span> 🪙</div>
+      <button class="btn" onclick="logout()" style="padding: 4px 10px; font-size: 12px; margin-left: 10px;">Вихід</button>
+    </div>
+  </header>
+
+  <main>
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('cases')">Кейси</button>
+      <button class="tab-btn" onclick="switchTab('minigames')">🎮 Ігри на удачу</button>
+      <button class="tab-btn" onclick="switchTab('upgrader')">Апгрейдер</button>
+      <button class="tab-btn" onclick="switchTab('market')">Магазин</button>
+      <button class="tab-btn" onclick="switchTab('inventory')">Інвентар</button>
+      <button class="tab-btn" onclick="switchTab('profile')">Кабінет</button>
+      <button id="adminTabBtn" class="tab-btn" onclick="switchTab('admin')" style="display:none; color: var(--danger);">Адмінка</button>
+    </div>
+
+    <div id="cases" class="page-content active">
+      <div id="rouletteArea" style="display:none;" class="roulette-wrapper">
+        <h2 id="currentCaseName" style="text-align: center; font-size: 28px;">Кейс</h2>
+        <div class="roulette-container">
+          <div class="roulette-marker"></div>
+          <div class="roulette-track" id="rouletteTrack"></div>
+        </div>
+        <div style="text-align: center;">
+          <button class="btn btn-accent" id="openBtn" style="font-size: 20px; padding: 12px 40px;" onclick="spinRoulette()">Відкрити</button>
+          <button class="btn" onclick="closeRoulette()">Назад</button>
+        </div>
+      </div>
+      <div class="cases-grid" id="casesGrid"></div>
+    </div>
+
+    <div id="minigames" class="page-content">
+      <div class="game-section">
+        <h3>1. Вгадай 1 з 3 карт (+15 🪙)</h3>
+        <div class="cards-container" id="g1-container"></div>
+      </div>
+      <div class="game-section">
+        <h3>2. Пошук кристала з 4 карток (+25 🪙)</h3>
+        <div class="cards-container" id="g2-container"></div>
+      </div>
+      <div class="game-section">
+        <h3>3. Скриня Удачі з 5 скриньок (+50 🪙)</h3>
+        <div class="cards-container" id="g4-container"></div>
+      </div>
+    </div>
+
+    <div id="upgrader" class="page-content">
+      <div style="display: flex; gap: 30px; justify-content: center; flex-wrap: wrap;">
+        <div style="background: var(--panel-bg); padding:20px; border-radius:12px; width:260px; text-align:center;">
+          <h4>Ваш предмет</h4>
+          <div id="selectedInvItem" style="margin-top:15px;"><p style="color:var(--text-dim);">Оберіть з інвентаря</p></div>
+        </div>
+        <div style="text-align:center; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+          <span id="upgradeChance" style="font-size:36px; font-weight:700; color:var(--accent);">0%</span>
+          <button class="btn btn-accent" style="margin-top:10px;" onclick="runUpgrade()">UPGRADE</button>
+        </div>
+        <div style="background: var(--panel-bg); padding:20px; border-radius:12px; width:260px; text-align:center;">
+          <h4>Цільовий предмет</h4>
+          <div id="selectedTargetItem" style="margin-top:15px;"><p style="color:var(--text-dim);">Оберіть знизу</p></div>
+        </div>
+      </div>
+      <h3 style="margin:25px 0 15px;">Оберіть бажаний скін:</h3>
+      <div class="inventory-grid" id="upgradeTargetsGrid"></div>
+    </div>
+
+    <div id="market" class="page-content">
+      <h2>Магазин скінів</h2>
+      <div class="inventory-grid" id="marketGrid"></div>
+    </div>
+
+    <div id="inventory" class="page-content">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h2>Інвентар</h2>
+        <button class="btn btn-accent" onclick="sellAllItems()">Продати все</button>
+      </div>
+      <div class="inventory-grid" id="inventoryGrid"></div>
+    </div>
+
+    <div id="profile" class="page-content">
+      <h2>Особистий кабінет</h2>
+      <div style="background: var(--panel-bg); padding:20px; border-radius:12px; margin-top:15px;">
+        <p><strong>Нікнейм:</strong> <span id="profName">...</span></p>
+        <p style="margin-top:10px;"><strong>Дата реєстрації:</strong> <span id="profRegDate">...</span></p>
+        <p style="margin-top:10px;"><strong>Статус:</strong> <span id="profStatus" style="color:#2ecc71;">Активний</span></p>
+        <button class="btn" style="margin-top:20px;" onclick="promptAdminCode()">Ввести код адміна</button>
+      </div>
+    </div>
+
+    <div id="admin" class="page-content">
+      <h2 style="color: var(--danger);">👑 Панель Адміністратора</h2>
+      
+      <div class="admin-card">
+        <h3>📋 Список усіх зареєстрованих гравців</h3>
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Нікнейм</th>
+                <th>Баланс</th>
+                <th>Дата реєстрації</th>
+                <th>Статус</th>
+                <th>Дії</th>
+              </tr>
+            </thead>
+            <tbody id="adminAllUsersTable"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3>🔍 Управління за нікнеймом</h3>
+        <div style="margin-top: 15px; display:flex; flex-wrap:wrap; gap:10px;">
+          <input type="text" id="targetPlayerName" class="admin-input" placeholder="Нікнейм...">
+          <button class="btn btn-accent" onclick="searchPlayer()">Знайти</button>
+        </div>
+
+        <div id="playerSearchResult" style="display:none; margin-top: 20px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+          <h4>Гравець: <span id="foundPlayerName" style="color:var(--accent);"></span></h4>
+          <p id="foundPlayerStatus" style="margin: 5px 0; font-size:14px;"></p>
+          
+          <div style="margin-top: 15px; display:flex; gap:10px; flex-wrap:wrap;">
+            <button class="btn btn-danger" onclick="banTargetPlayer(true)">Забанити назавжди</button>
+            <button class="btn" style="border-color:#2ecc71; color:#2ecc71;" onclick="banTargetPlayer(false)">Розбанити</button>
+          </div>
+
+          <div style="margin-top: 15px;">
+            <p style="font-size:14px; margin-bottom:5px;">Заблокувати на час:</p>
+            <button class="btn" onclick="tempBanTargetPlayer(1)">1 хв</button>
+            <button class="btn" onclick="tempBanTargetPlayer(5)">5 хв</button>
+            <button class="btn" onclick="tempBanTargetPlayer(15)">15 хв</button>
+            <button class="btn" onclick="tempBanTargetPlayer(60)">1 год</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-card">
+        <h3>⚙️ Налаштування власного балансу</h3>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <input type="number" id="adminBalanceInput" class="admin-input" placeholder="Коіни">
+          <button class="btn btn-accent" onclick="setAdminBalance()">Встановити</button>
+        </div>
+        <label style="cursor:pointer; display:block; margin-top:15px;">
+          <input type="checkbox" id="forceWinToggle" onchange="toggleForceWin(this.checked)"> 
+          <strong>Завжди перемагати в кейсах (100% підкрутка)</strong>
+        </label>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let db = JSON.parse(localStorage.getItem('cs_game_db')) || { users: {} };
+    let currentUser = null;
+    let cabinetClicks = 0, forceWin = false;
+
+    const defaultSkins = [
+      { id: 1, name: "P250 | Sand Dune", price: 2, rarity: "uncommon", c1: "#c2b280", c2: "#8b8589" },
+      { id: 2, name: "Glock-18 | Vogue", price: 15, rarity: "rare", c1: "#e74c3c", c2: "#9b59b6" },
+      { id: 3, name: "USP-S | Cyrex", price: 25, rarity: "rare", c1: "#e74c3c", c2: "#ffffff" },
+      { id: 4, name: "M4A4 | Neo-Noir", price: 60, rarity: "mythical", c1: "#8e44ad", c2: "#f1c40f" },
+      { id: 5, name: "AK-47 | Redline", price: 45, rarity: "rare", c1: "#2c3e50", c2: "#e74c3c" },
+      { id: 6, name: "AWP | Asiimov", price: 150, rarity: "mythical", c1: "#ff6600", c2: "#ffffff" },
+      { id: 7, name: "AK-47 | Neon Rider", price: 180, rarity: "legendary", c1: "#ff007f", c2: "#00f0ff" },
+      { id: 8, name: "AK-47 | Vulcan", price: 500, rarity: "ancient", c1: "#3498db", c2: "#ffffff" },
+      { id: 9, name: "AWP | Dragon Lore", price: 3000, rarity: "ancient", c1: "#f1c40f", c2: "#e67e22" }
+    ];
+
+    const cases = [
+      { id: 'c1', name: "Start Case", price: 20, color: "#5e98d9", items: [1, 2, 3] },
+      { id: 'c2', name: "Mid Case", price: 70, color: "#d32ce6", items: [4, 5, 6] },
+      { id: 'c3', name: "Pro Case", price: 250, color: "#caab05", items: [7, 8, 9] }
+    ];
+
+    let activeCase = null, upgraderState = { userItem: null, targetItem: null };
+
+    function saveDB() {
+      localStorage.setItem('cs_game_db', JSON.stringify(db));
+    }
+
+    // НОВА ЛОГІКА ВХОДУ ТА РЕЄСТРАЦІЇ
+    function handleLogin() {
+      const name = document.getElementById('authUsername').value.trim();
+      const pass = document.getElementById('authPassword').value.trim();
+
+      if (!name || !pass) return alert("Заповніть всі поля!");
+
+      if (!db.users[name]) {
+        return alert("Акаунт з таким нікнеймом не знайдено! Натисніть кнопку 'Реєстрація'.");
+      }
+
+      if (db.users[name].password !== pass) {
+        return alert("Невірний пароль!");
+      }
+
+      currentUser = name;
+      document.getElementById('authModal').style.display = 'none';
+      initGame();
+    }
+
+    function handleRegister() {
+      const name = document.getElementById('authUsername').value.trim();
+      const pass = document.getElementById('authPassword').value.trim();
+
+      if (!name || !pass) return alert("Заповніть всі поля!");
+
+      if (db.users[name]) {
+        return alert("Цей нікнейм вже зайнятий! Введіть інший нік або натисніть 'Увійти'.");
+      }
+
+      db.users[name] = {
+        password: pass,
+        balance: 200,
+        isBanned: false,
+        banUntil: null,
+        regDate: new Date().toLocaleDateString('uk-UA'),
+        inventory: []
+      };
+      saveDB();
+
+      currentUser = name;
+      document.getElementById('authModal').style.display = 'none';
+      initGame();
+    }
+
+    function logout() { location.reload(); }
+
+    function checkBan() {
+      if (!currentUser) return false;
+      let userData = db.users[currentUser];
+
+      if (userData.banUntil && Date.now() < userData.banUntil) {
+        let leftSec = Math.ceil((userData.banUntil - Date.now()) / 1000);
+        document.getElementById('banOverlay').style.display = 'flex';
+        document.getElementById('banTitle').innerText = "ТЕМЧАСОВИЙ БАН!";
+        document.getElementById('banReason').innerText = "Ваш акаунт заблоковано.";
+        document.getElementById('banTimer').innerText = `Залишилось: ${leftSec} сек.`;
+        return true;
+      }
+
+      if (userData.isBanned) {
+        document.getElementById('banOverlay').style.display = 'flex';
+        document.getElementById('banTitle').innerText = "АКАУНТ ЗАБАНЕНО!";
+        document.getElementById('banReason').innerText = "Заблоковано назавжди.";
+        document.getElementById('banTimer').innerText = "";
+        return true;
+      }
+
+      document.getElementById('banOverlay').style.display = 'none';
+      return false;
+    }
+
+    function initGame() {
+      if (checkBan()) return;
+      renderCases(); renderInventory(); renderUpgradeTargets(); renderMarket(); updateUI();
+      initCardGames();
+    }
+
+    function updateUI() {
+      if (checkBan()) return;
+      let userData = db.users[currentUser];
+      document.getElementById('userBalance').innerText = userData.balance.toFixed(0);
+      document.getElementById('userName').innerText = currentUser;
+      document.getElementById('profName').innerText = currentUser;
+      document.getElementById('profRegDate').innerText = userData.regDate || "Сьогодні";
+      saveDB();
+    }
+
+    function switchTab(tabId) {
+      if (checkBan()) return;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.page-content').forEach(p => p.classList.remove('active'));
+      event.target.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+      if (tabId === 'admin') renderAdminUserTable();
+    }
+
+    function handleCabinetClick() { if (++cabinetClicks >= 5) { cabinetClicks = 0; promptAdminCode(); } }
+
+    function promptAdminCode() {
+      if (prompt("Код адміна:") === "152438") {
+        document.getElementById('adminTabBtn').style.display = "block";
+        alert("Доступ надано!"); switchTab('admin');
+      }
+    }
+
+    function renderAdminUserTable() {
+      const tbody = document.getElementById('adminAllUsersTable');
+      tbody.innerHTML = '';
+      
+      for (let username in db.users) {
+        let u = db.users[username];
+        let status = u.isBanned ? '🔴 Бан' : (u.banUntil && Date.now() < u.banUntil ? '⏳ Мут/Таймаут' : '🟢 Активний');
+        
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${username}</strong></td>
+          <td>${u.balance} 🪙</td>
+          <td>${u.regDate || 'Невідомо'}</td>
+          <td>${status}</td>
+          <td>
+            <button class="btn btn-accent" style="padding:2px 8px; font-size:12px;" onclick="quickAddMoney('${username}')">+100</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    function quickAddMoney(targetUser) {
+      db.users[targetUser].balance += 100;
+      saveDB();
+      updateUI();
+      renderAdminUserTable();
+    }
+
+    let searchedPlayer = null;
+    function searchPlayer() {
+      const name = document.getElementById('targetPlayerName').value.trim();
+      if (!db.users[name]) return alert("Гравця не знайдено!");
+
+      searchedPlayer = name;
+      const p = db.users[name];
+      document.getElementById('playerSearchResult').style.display = 'block';
+      document.getElementById('foundPlayerName').innerText = name;
+      document.getElementById('foundPlayerStatus').innerText = p.isBanned ? "Забанений назавжди" : "Активний";
+    }
+
+    function banTargetPlayer(status) {
+      if (!searchedPlayer) return;
+      db.users[searchedPlayer].isBanned = status;
+      db.users[searchedPlayer].banUntil = null;
+      saveDB();
+      alert(`Статус для ${searchedPlayer} змінено!`);
+      searchPlayer();
+      checkBan();
+    }
+
+    function tempBanTargetPlayer(minutes) {
+      if (!searchedPlayer) return;
+      db.users[searchedPlayer].banUntil = Date.now() + (minutes * 60 * 1000);
+      db.users[searchedPlayer].isBanned = false;
+      saveDB();
+      alert(`Гравець ${searchedPlayer} заблокований на ${minutes} хв!`);
+      searchPlayer();
+      checkBan();
+    }
+
+    function setAdminBalance() {
+      let v = parseFloat(document.getElementById('adminBalanceInput').value);
+      if(!isNaN(v)) { db.users[currentUser].balance = v; updateUI(); }
+    }
+
+    function toggleForceWin(v) { forceWin = v; }
+
+    function initCardGames() {
+      renderCardGame('g1-container', 3, '⭐', '❌', 15);
+      renderCardGame('g2-container', 4, '💎', '💥', 25);
+      renderCardGame('g4-container', 5, '🔑', '🔒', 50);
+    }
+
+    function renderCardGame(containerId, count, winIcon, loseIcon, reward) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      let winIndex = Math.floor(Math.random() * count);
+      let played = false;
+
+      for (let i = 0; i < count; i++) {
+        let card = document.createElement('div');
+        card.className = 'game-card-item';
+        card.innerText = '❓';
+        
+        card.onclick = () => {
+          if (checkBan() || played) return;
+          played = true;
+
+          Array.from(container.children).forEach((c, idx) => {
+            c.innerText = (idx === winIndex) ? winIcon : loseIcon;
+            c.style.borderColor = (idx === winIndex) ? '#2ecc71' : 'var(--danger)';
+          });
+
+          if (i === winIndex) {
+            db.users[currentUser].balance += reward;
+            updateUI();
+            if (typeof confetti === 'function') confetti({ particleCount: 50, spread: 60 });
+            alert(`ВИГРАШ! +${reward} 🪙!`);
+          } else alert("Не вгадали!");
+
+          setTimeout(() => renderCardGame(containerId, count, winIcon, loseIcon, reward), 2000);
+        };
+        container.appendChild(card);
+      }
+    }
+
+    function getSkinSVG(type, c1, c2) {
+      return `<svg viewBox="0 0 100 60"><path d="M 10,35 L 40,12 L 85,18 L 75,42 L 35,38 Z" fill="${c1}" stroke="${c2}" stroke-width="2"/><circle cx="22" cy="35" r="4" fill="${c2}"/></svg>`;
+    }
+
+    function getCaseSVG(color) {
+      return `<svg viewBox="0 0 120 90"><rect x="15" y="25" width="90" height="55" rx="8" fill="#12151e" stroke="${color}" stroke-width="3"/><circle cx="60" cy="52" r="6" fill="${color}"/></svg>`;
+    }
+
+    function createItemNode(skin) {
+      let div = document.createElement('div');
+      div.className = `item-card rarity-${skin.rarity}`;
+      div.innerHTML = `${getSkinSVG('weapon', skin.c1, skin.c2)}
+        <div style="font-size:11px; font-weight:600; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${skin.name}</div>
+        <div style="font-size:13px; font-weight:700; color:#2ecc71;">${skin.price} 🪙</div>`;
+      return div;
+    }
+
+    function renderCases() {
+      const grid = document.getElementById('casesGrid'); grid.innerHTML = '';
+      cases.forEach(c => {
+        grid.innerHTML += `<div class="case-card" onclick="selectCase('${c.id}')"><div style="height:120px; display:flex; align-items:center; justify-content:center;">${getCaseSVG(c.color)}</div><h3>${c.name}</h3><p style="margin-top:8px; color:#2ecc71; font-weight:700;">${c.price} 🪙</p></div>`;
+      });
+    }
+
+    function selectCase(id) {
+      if (checkBan()) return;
+      activeCase = cases.find(c => c.id === id);
+      document.getElementById('currentCaseName').innerText = activeCase.name;
+      document.getElementById('rouletteArea').style.display = 'block';
+      document.getElementById('casesGrid').style.display = 'none';
+      buildRouletteTrack();
+    }
+
+    function closeRoulette() {
+      document.getElementById('rouletteArea').style.display = 'none';
+      document.getElementById('casesGrid').style.display = 'grid';
+    }
+
+    function buildRouletteTrack() {
+      const track = document.getElementById('rouletteTrack');
+      track.style.transition = 'none'; track.style.transform = 'translateX(0px)'; track.innerHTML = '';
+      let caseSkins = defaultSkins.filter(s => activeCase.items.includes(s.id));
+      for (let i = 0; i < 50; i++) {
+        let skin = caseSkins[Math.floor(Math.random() * caseSkins.length)];
+        track.appendChild(createItemNode(skin));
+      }
+    }
+
+    function spinRoulette() {
+      if (checkBan()) return;
+      let userAcc = db.users[currentUser];
+      if (userAcc.balance < activeCase.price) return alert("Недостатньо коінів!");
+      
+      userAcc.balance -= activeCase.price; updateUI();
+      document.getElementById('openBtn').disabled = true;
+
+      const track = document.getElementById('rouletteTrack');
+      let caseSkins = defaultSkins.filter(s => activeCase.items.includes(s.id));
+      let winningSkin = forceWin ? [...caseSkins].sort((a,b)=>b.price-a.price)[0] : caseSkins[Math.floor(Math.random()*caseSkins.length)];
+
+      track.children[40].replaceWith(createItemNode(winningSkin));
+
+      let targetOffset = -(40 * 152 - (document.querySelector('.roulette-container').offsetWidth / 2) + 76);
+      track.style.transition = 'transform 4s cubic-bezier(0.08, 0.9, 0.1, 1)';
+      track.style.transform = `translateX(${targetOffset}px)`;
+
+      setTimeout(() => {
+        if (typeof confetti === 'function') confetti({ particleCount: 60, spread: 60 });
+        userAcc.inventory.push({...winningSkin, instanceId: Date.now() + Math.random()});
+        renderInventory();
+        document.getElementById('openBtn').disabled = false;
+        saveDB();
+      }, 4000);
+    }
+
+    function renderUpgradeTargets() {
+      const grid = document.getElementById('upgradeTargetsGrid'); grid.innerHTML = '';
+      defaultSkins.forEach(skin => {
+        let n = createItemNode(skin); n.onclick = () => selectTargetItem(skin.id);
+        grid.appendChild(n);
+      });
+    }
+
+    function selectUserInvItem(instanceId) {
+      upgraderState.userItem = db.users[currentUser].inventory.find(i => i.instanceId === instanceId);
+      document.getElementById('selectedInvItem').innerHTML = createItemNode(upgraderState.userItem).outerHTML;
+      calculateChance();
+    }
+
+    function selectTargetItem(id) {
+      upgraderState.targetItem = defaultSkins.find(s => s.id === id);
+      document.getElementById('selectedTargetItem').innerHTML = createItemNode(upgraderState.targetItem).outerHTML;
+      calculateChance();
+    }
+
+    function calculateChance() {
+      if(!upgraderState.userItem || !upgraderState.targetItem) return;
+      let chance = Math.min((upgraderState.userItem.price / upgraderState.targetItem.price) * 100, 90);
+      document.getElementById('upgradeChance').innerText = chance.toFixed(1) + '%';
+    }
+
+    function runUpgrade() {
+      if (checkBan()) return;
+      if(!upgraderState.userItem || !upgraderState.targetItem) return alert("Оберіть обидва предмети!");
+      let chance = parseFloat(document.getElementById('upgradeChance').innerText);
+      
+      let userAcc = db.users[currentUser];
+      userAcc.inventory = userAcc.inventory.filter(i => i.instanceId !== upgraderState.userItem.instanceId);
+
+      if (Math.random() * 100 <= chance || forceWin) {
+        userAcc.inventory.push({...upgraderState.targetItem, instanceId: Date.now() + Math.random()});
+        alert("УСПІХ!");
+      } else alert("НЕВДАЧА!");
+      
+      upgraderState.userItem = null;
+      document.getElementById('selectedInvItem').innerHTML = '<p style="color:var(--text-dim);">Оберіть з інвентаря</p>';
+      document.getElementById('upgradeChance').innerText = '0%';
+      renderInventory(); updateUI(); saveDB();
+    }
+
+    function renderMarket() {
+      const grid = document.getElementById('marketGrid'); grid.innerHTML = '';
+      defaultSkins.forEach(skin => {
+        let n = createItemNode(skin); n.onclick = () => buySkin(skin); grid.appendChild(n);
+      });
+    }
+
+    function buySkin(skin) {
+      if (checkBan()) return;
+      let userAcc = db.users[currentUser];
+      if (userAcc.balance < skin.price) return alert("Недостатньо коінів!");
+      userAcc.balance -= skin.price;
+      userAcc.inventory.push({...skin, instanceId: Date.now() + Math.random()});
+      renderInventory(); updateUI(); saveDB();
+    }
+
+    function renderInventory() {
+      const grid = document.getElementById('inventoryGrid'); grid.innerHTML = '';
+      if (!currentUser || !db.users[currentUser]) return;
+      
+      db.users[currentUser].inventory.forEach(item => {
+        let n = createItemNode(item);
+        n.onclick = () => { selectUserInvItem(item.instanceId); switchTab('upgrader'); };
+        grid.appendChild(n);
+      });
+    }
+
+    function sellAllItems() {
+      if (checkBan()) return;
+      let userAcc = db.users[currentUser];
+      let total = userAcc.inventory.reduce((s, i) => s + i.price, 0);
+      userAcc.balance += total; userAcc.inventory = [];
+      renderInventory(); updateUI(); saveDB();
+    }
+  </script>
+</body>
+</html>
