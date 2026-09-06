@@ -3,157 +3,214 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CS2 Ultimate Simulator</title>
+    <title>CS2 Ultimate Simulator & Upgrader</title>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #0f1218;
-            --panel-bg: #181d26;
-            --border-glow: #2a3242;
+            --bg-main: #0b0e14;
+            --panel-bg: #151a23;
+            --panel-border: rgba(255, 255, 255, 0.08);
             --accent: #ff9d00;
-            --accent-hover: #ffb733;
-            --text: #f0f3f8;
-            --text-dim: #9aa8bc;
-            --danger: #eb4b4b;
+            --accent-glow: rgba(255, 157, 0, 0.3);
+            --text-main: #f0f3f8;
+            --text-muted: #8b9bb4;
             --success: #28a745;
-            
-            --rarity-uncommon: #5e98d9;
-            --rarity-rare: #4b69ff;
-            --rarity-mythical: #d32ce6;
-            --rarity-legendary: #eb4b4b;
-            --rarity-ancient: #caab05;
+            --danger: #dc3545;
+
+            /* Skin Rarities */
+            --rarity-consumer: #b0c3d9;
+            --rarity-milspec: #4b69ff;
+            --rarity-restricted: #8847ff;
+            --rarity-classified: #d32ce6;
+            --rarity-covert: #eb4b4b;
+            --rarity-gold: #ffd700;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; user-select: none; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; user-select: none; }
 
         body {
-            background: var(--bg-dark);
-            color: var(--text);
+            background: var(--bg-main);
+            color: var(--text-main);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            font-size: 16px;
+            background-image: radial-gradient(circle at 50% 0%, #1c2433 0%, #0b0e14 70%);
         }
 
-        /* Fullscreen Layout & Bigger UI */
+        /* HEADER */
         header {
-            background: var(--panel-bg);
-            border-bottom: 2px solid var(--border-glow);
+            background: rgba(21, 26, 35, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--panel-border);
             padding: 15px 30px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
 
-        .logo { font-size: 24px; font-weight: 800; color: var(--accent); letter-spacing: 1px; }
+        .logo { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: 1.5px; display: flex; align-items: center; gap: 10px; }
+        .logo i { color: var(--accent); }
 
-        .user-nav { display: flex; align-items: center; gap: 20px; }
-        .balance-badge { background: #0004; padding: 8px 16px; border-radius: 20px; border: 1px solid var(--border-glow); font-size: 18px; font-weight: bold; color: #4caf50; }
+        .user-nav { display: flex; align-items: center; gap: 15px; }
+        .balance-badge {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px 18px;
+            border-radius: 20px;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+            font-size: 16px;
+            font-weight: 700;
+            color: #4caf50;
+            box-shadow: 0 0 10px rgba(76, 175, 80, 0.15);
+        }
 
+        /* BUTTONS */
         .btn {
             background: var(--accent);
             color: #000;
             border: none;
             padding: 10px 20px;
-            font-size: 15px;
-            font-weight: bold;
+            font-size: 14px;
+            font-weight: 700;
             border-radius: 8px;
             cursor: pointer;
-            transition: 0.2s;
+            transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
             gap: 8px;
         }
-        .btn:hover { background: var(--accent-hover); transform: translateY(-2px); }
+        .btn:hover { background: #ffae26; transform: translateY(-2px); box-shadow: 0 4px 15px var(--accent-glow); }
+        .btn-secondary { background: rgba(255, 255, 255, 0.08); color: #fff; }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.15); box-shadow: none; }
         .btn-danger { background: var(--danger); color: #fff; }
         .btn-telegram { background: #0088cc; color: #fff; }
-        .btn-telegram:hover { background: #0099e6; }
+        .btn-telegram:hover { background: #0099e6; box-shadow: 0 4px 15px rgba(0, 136, 204, 0.4); }
 
+        /* TABS NAVIGATION */
         nav.main-tabs {
             display: flex;
-            background: #13171e;
+            background: rgba(15, 18, 24, 0.9);
             padding: 10px 30px;
-            gap: 15px;
-            border-bottom: 1px solid var(--border-glow);
+            gap: 10px;
+            border-bottom: 1px solid var(--panel-border);
+            overflow-x: auto;
         }
         .tab-btn {
             background: transparent;
-            color: var(--text-dim);
+            color: var(--text-muted);
             border: none;
-            padding: 12px 24px;
-            font-size: 18px;
-            font-weight: 600;
+            padding: 12px 20px;
+            font-size: 15px;
+            font-weight: 700;
             cursor: pointer;
-            border-radius: 6px;
+            border-radius: 8px;
+            transition: 0.2s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        .tab-btn.active, .tab-btn:hover { background: var(--panel-bg); color: var(--text); }
+        .tab-btn.active, .tab-btn:hover { background: var(--panel-bg); color: var(--text-main); }
+        .tab-btn.active { border-bottom: 2px solid var(--accent); }
 
         main { flex: 1; padding: 25px 30px; }
 
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* Split Screen Upgrader */
+        /* UPGRADER SPLIT SCREEN */
         .upgrader-container {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 25px;
-            height: calc(100vh - 220px);
+            grid-template-columns: 1fr 300px 1fr;
+            gap: 20px;
+            min-height: 550px;
         }
 
         .upgrader-panel {
             background: var(--panel-bg);
-            border: 1px solid var(--border-glow);
+            border: 1px solid var(--panel-border);
             border-radius: 12px;
             padding: 20px;
             display: flex;
             flex-direction: column;
         }
 
-        .upgrader-panel h2 { margin-bottom: 15px; font-size: 20px; color: var(--accent); }
+        .upgrader-panel h2 { font-size: 18px; margin-bottom: 15px; color: var(--accent); display: flex; align-items: center; gap: 8px; }
 
         .grid-container {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
             gap: 12px;
             overflow-y: auto;
-            flex: 1;
+            max-height: 480px;
             padding-right: 5px;
         }
 
+        /* SKIN CARDS */
         .skin-card {
-            background: #0f1218;
-            border: 2px solid var(--border-glow);
+            background: rgba(11, 14, 20, 0.6);
+            border: 1px solid var(--panel-border);
             border-radius: 8px;
             padding: 10px;
             text-align: center;
             cursor: pointer;
             transition: 0.2s;
             position: relative;
+            overflow: hidden;
         }
-        .skin-card:hover { transform: scale(1.03); border-color: var(--accent); }
-        .skin-card.selected { border-color: #4caf50; background: #1b281e; }
-        .skin-card img { width: 100%; height: 80px; object-fit: contain; }
-        .skin-name { font-size: 13px; font-weight: bold; margin-top: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .skin-price { font-size: 12px; color: #4caf50; margin-top: 3px; }
+        .skin-card::before {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; right: 0; height: 3px;
+            background: var(--rarity-milspec);
+        }
+        .skin-card.covert::before { background: var(--rarity-covert); }
+        .skin-card.classified::before { background: var(--rarity-classified); }
+        .skin-card.gold::before { background: var(--rarity-gold); }
 
-        .upgrade-controls {
-            grid-column: span 2;
+        .skin-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.2); }
+        .skin-card.selected { border-color: var(--accent); background: rgba(255, 157, 0, 0.08); box-shadow: 0 0 12px var(--accent-glow); }
+        .skin-card img { width: 100%; height: 80px; object-fit: contain; filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5)); }
+        .skin-name { font-size: 12px; font-weight: 700; margin-top: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .skin-price { font-size: 11px; color: #4caf50; font-weight: bold; margin-top: 4px; }
+
+        /* CENTER UPGRADE WHEEL */
+        .upgrade-center {
             background: var(--panel-bg);
-            border: 1px solid var(--border-glow);
+            border: 1px solid var(--panel-border);
             border-radius: 12px;
             padding: 20px;
-            text-align: center;
             display: flex;
-            justify-content: space-around;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
+            text-align: center;
         }
 
-        /* Auth & Profile Modals */
+        .chance-circle {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: 6px solid rgba(255,255,255,0.05);
+            border-top-color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin: 20px 0;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        .chance-value { font-size: 28px; font-weight: 900; color: var(--accent); }
+
+        /* MODALS */
         .modal {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(8px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -161,129 +218,139 @@
         }
         .modal-box {
             background: var(--panel-bg);
-            border: 1px solid var(--border-glow);
+            border: 1px solid var(--panel-border);
             padding: 30px;
             border-radius: 12px;
-            width: 400px;
+            width: 420px;
             text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         .modal-box input {
             width: 100%;
             padding: 12px;
             margin: 10px 0;
-            border-radius: 6px;
-            border: 1px solid var(--border-glow);
-            background: #0f1218;
+            border-radius: 8px;
+            border: 1px solid var(--panel-border);
+            background: rgba(0,0,0,0.4);
             color: #fff;
+            outline: none;
         }
 
-        /* Support Button */
         .support-card {
             margin-top: 20px;
             padding: 15px;
-            background: #111823;
-            border-radius: 8px;
-            border: 1px dashed var(--border-glow);
+            background: rgba(0, 136, 204, 0.08);
+            border-radius: 10px;
+            border: 1px dashed rgba(0, 136, 204, 0.3);
+        }
+
+        @media (max-width: 900px) {
+            .upgrader-container { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
 
     <header>
-        <div class="logo">CS2 SIMULATOR</div>
+        <div class="logo"><i class="fa-solid font-awesome"></i> CS2 SIMULATOR</div>
         <div class="user-nav">
             <div class="balance-badge" id="userBalance">0 🪙</div>
-            <button class="btn" onclick="openProfile()">👤 Кабінет</button>
-            <button class="btn btn-danger" onclick="logout()">Вийти</button>
+            <button class="btn btn-secondary" onclick="openProfile()"><i class="fa-solid fa-user"></i> Кабінет</button>
+            <button class="btn btn-danger" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i></button>
         </div>
     </header>
 
     <nav class="main-tabs">
-        <button class="tab-btn active" onclick="switchTab('upgrader')">⚡ Апгрейд</button>
-        <button class="tab-btn" onclick="switchTab('market')">🛒 Магазин</button>
-        <button class="tab-btn" onclick="switchTab('inventory')">🎒 Інвентар</button>
-        <button class="tab-btn" onclick="switchTab('bonus')">🎁 Бонус</button>
+        <button class="tab-btn active" onclick="switchTab('upgrader')"><i class="fa-solid fa-bolt"></i> Апгрейд</button>
+        <button class="tab-btn" onclick="switchTab('market')"><i class="fa-solid fa-cart-shopping"></i> Магазин</button>
+        <button class="tab-btn" onclick="switchTab('inventory')"><i class="fa-solid fa-box-open"></i> Інвентар</button>
+        <button class="tab-btn" onclick="switchTab('bonus')"><i class="fa-solid fa-gift"></i> Бонус</button>
     </nav>
 
     <main>
-        <!-- UPGRADER TAB (SPLIT SCREEN) -->
+        <!-- UPGRADER TAB -->
         <div id="upgrader" class="tab-content active">
             <div class="upgrader-container">
                 <div class="upgrader-panel">
-                    <h2>1. Ваш інвентар (Що міняємо)</h2>
+                    <h2><i class="fa-solid fa-hand"></i> 1. Ваш інвентар</h2>
                     <div class="grid-container" id="upgradeUserGrid"></div>
                 </div>
+
+                <div class="upgrade-center">
+                    <div style="font-weight: 700; color: var(--text-muted);">ШАНС ПОКРАЩЕННЯ</div>
+                    <div class="chance-circle">
+                        <span class="chance-value" id="upgradeChance">0%</span>
+                    </div>
+                    <button class="btn" style="width: 100%; padding: 15px;" onclick="runUpgrade()"><i class="fa-solid fa-play"></i> АПГРЕЙД</button>
+                </div>
+
                 <div class="upgrader-panel">
-                    <h2>2. Доступні скіни (На що міняємо)</h2>
+                    <h2><i class="fa-solid fa-crosshairs"></i> 2. Виберіть ціль</h2>
                     <div class="grid-container" id="upgradeTargetGrid"></div>
                 </div>
-            </div>
-            <div class="upgrade-controls" style="margin-top: 15px;">
-                <div>Шанс успіху: <b id="upgradeChance" style="font-size: 22px; color: var(--accent);">0%</b></div>
-                <button class="btn" style="padding: 15px 40px; font-size: 18px;" onclick="runUpgrade()">Спробувати Апгрейд!</button>
             </div>
         </div>
 
         <!-- MARKET TAB -->
         <div id="market" class="tab-content">
-            <h2 style="margin-bottom: 15px;">Купити скіни за коїни</h2>
+            <h2 style="margin-bottom: 20px;"><i class="fa-solid fa-store"></i> Купити скіни за коїни</h2>
             <div class="grid-container" id="marketGrid"></div>
         </div>
 
         <!-- INVENTORY TAB -->
         <div id="inventory" class="tab-content">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                <h2>Ваш інвентар</h2>
-                <button class="btn btn-danger" onclick="sellAllItems()">Продати все</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2><i class="fa-solid fa-boxes-stacked"></i> Ваш інвентар</h2>
+                <button class="btn btn-danger" onclick="sellAllItems()"><i class="fa-solid fa-coins"></i> Продати все</button>
             </div>
             <div class="grid-container" id="inventoryGrid"></div>
         </div>
 
         <!-- BONUS TAB -->
-        <div id="bonus" class="tab-content" style="text-align: center; padding-top: 50px;">
-            <h2>Щоденний безкоштовний бонус</h2>
-            <p style="color: var(--text-dim); margin: 15px 0;">Забирайте безкоштовні коїни кожен день!</p>
-            <button class="btn" style="padding: 15px 30px; font-size: 18px;" onclick="claimBonus()">Забрати 500 🪙</button>
+        <div id="bonus" class="tab-content" style="text-align: center; padding-top: 60px;">
+            <h2><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent);"></i> Щоденна нагорода</h2>
+            <p style="color: var(--text-muted); margin: 15px 0;">Отримуйте безкоштовні коїни кожного дня!</p>
+            <button class="btn" style="padding: 15px 35px; font-size: 18px;" onclick="claimBonus()">Забрати 500 🪙</button>
         </div>
     </main>
 
     <!-- AUTH MODAL -->
     <div class="modal" id="authModal">
         <div class="modal-box">
-            <h2>Вхід / Реєстрація</h2>
+            <h2 style="margin-bottom: 15px;">Вхід у CS2 Simulator</h2>
             <input type="text" id="authLogin" placeholder="Логін">
             <input type="password" id="authPass" placeholder="Пароль">
-            <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
                 <button class="btn" style="flex: 1;" onclick="login()">Увійти</button>
-                <button class="btn" style="flex: 1; background: #444; color: #fff;" onclick="register()">Реєстрація</button>
+                <button class="btn btn-secondary" style="flex: 1;" onclick="register()">Реєстрація</button>
             </div>
         </div>
     </div>
 
-    <!-- PROFILE & SUPPORT MODAL -->
+    <!-- PROFILE MODAL -->
     <div class="modal" id="profileModal" style="display: none;">
         <div class="modal-box">
             <h2>Кабінет користувача</h2>
-            <p style="margin: 10px 0; font-size: 18px;" id="profileName">Логін: -</p>
+            <p style="margin: 15px 0; font-size: 18px; font-weight: bold;" id="profileName">Логін: -</p>
             
             <div class="support-card">
-                <h3>Знайшли баг чи потрібна допомога?</h3>
-                <p style="font-size: 13px; color: var(--text-dim); margin: 8px 0;">Натисніть кнопку нижче, щоб написати розробнику напряму в Telegram</p>
+                <h4 style="margin-bottom: 5px; color: #0088cc;"><i class="fa-solid fa-headset"></i> Потрібна допомога?</h4>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">Знайшли баг або є питання? Напишіть розробнику в Telegram</p>
                 <a href="https://t.me/vocixi" target="_blank" class="btn btn-telegram" style="text-decoration: none; width: 100%; justify-content: center;">
-                    ✈️ Написати в Telegram (@vocixi)
+                    <i class="fa-paper-plane"></i> Написати в Telegram (@vocixi)
                 </a>
             </div>
 
-            <button class="btn" style="margin-top: 20px; width: 100%;" onclick="closeProfile()">Закрити</button>
+            <button class="btn btn-secondary" style="margin-top: 20px; width: 100%;" onclick="closeProfile()">Закрити</button>
         </div>
     </div>
 
     <script>
         const skins = [
-            { id: 1, name: "AK-47 | Redline", price: 250, img: "https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpot7Haa1frko7aiD5949KzgL-DjsjwMqvBmm5D18p03-DA_I_23FXq-ENsNW37LdOTJwE_ZF_R_Fm4yOi9gcbpuZnAn3Vq7yR0s3_UzhO200pEaLdvhf0cQbM11_3C/360fx360f" },
-            { id: 2, name: "AWP | ASIIMOV", price: 1200, img: "https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpot621FAR17PLfYQJD_9W7m5a0n_L1JaKf330B38ck3-3E89333w3nqUA5Z237cdSccAU5Y13V-Afrle_v1pO96s6bz3Rh7iI8pLGG_VEAtw/360fx360f" },
-            { id: 3, name: "M4A4 | Howl", price: 5000, img: "https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpou-6kejhz2v_Nfz5H_uO1gb-Gw_alIITBhG5u5cB1g_zMu9qi3221_0U4ZGGmcdScc1A9A1_T_Fe9w--804j84srN5R3f/360fx360f" },
-            { id: 4, name: "Butterfly Knife", price: 10000, img: "https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpovbSsLQJf1fLEcjVL49KJlY20k_jkI7fUhFRB4sp0i_2Q846gig22_R0_Z2D1cdSXI1BvNF3U-gO9334/360fx360f" }
+            { id: 1, name: "AK-47 | Redline", price: 250, rarity: "restricted", img: "https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpot7Haa1frko7aiD5949KzgL-DjsjwMqvBmm5D18p03-DA_I_23FXq-ENsNW37LdOTJwE_ZF_R_Fm4yOi9gcbpuZnAn3Vq7yR0s3_UzhO200pEaLdvhf0cQbM11_3C/360fx360f" },
+            { id: 2, name: "AWP | Asiimov", price: 1200, rarity: "classified", img: "https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpot621FAR17PLfYQJD_9W7m5a0n_L1JaKf330B38ck3-3E89333w3nqUA5Z237cdSccAU5Y13V-Afrle_v1pO96s6bz3Rh7iI8pLGG_VEAtw/360fx360f" },
+            { id: 3, name: "M4A4 | Howl", price: 5000, rarity: "covert", img: "https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpou-6kejhz2v_Nfz5H_uO1gb-Gw_alIITBhG5u5cB1g_zMu9qi3221_0U4ZGGmcdScc1A9A1_T_Fe9w--804j84srN5R3f/360fx360f" },
+            { id: 4, name: "Butterfly Knife", price: 12000, rarity: "gold", img: "https://community.cloudflare.steamstatic.com/economy/image/-9a81dlWLwJ2UUGcVs_nsVtzdOEdtWwKGZZLQHTxDZ7I56KU0Zwwo4NUX4oFJZEHLbXH5ApeO4YmlhxYQknCRvCo04DEVlxkKgpovbSsLQJf1fLEcjVL49KJlY20k_jkI7fUhFRB4sp0i_2Q846gig22_R0_Z2D1cdSXI1BvNF3U-gO9334/360fx360f" }
         ];
 
         let db = JSON.parse(localStorage.getItem('cs2_db')) || { users: {} };
@@ -341,7 +408,7 @@
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
             document.getElementById(tabId).classList.add('active');
-            event.target.classList.add('active');
+            event.currentTarget.classList.add('active');
         }
 
         function renderMarket() {
@@ -349,7 +416,7 @@
             grid.innerHTML = '';
             skins.forEach(s => {
                 grid.innerHTML += `
-                    <div class="skin-card" onclick="buySkin(${s.id})">
+                    <div class="skin-card ${s.rarity}" onclick="buySkin(${s.id})">
                         <img src="${s.img}">
                         <div class="skin-name">${s.name}</div>
                         <div class="skin-price">${s.price} 🪙</div>
@@ -373,7 +440,7 @@
             grid.innerHTML = '';
             db.users[currentUser].inventory.forEach(item => {
                 grid.innerHTML += `
-                    <div class="skin-card">
+                    <div class="skin-card ${item.rarity}">
                         <img src="${item.img}">
                         <div class="skin-name">${item.name}</div>
                         <div class="skin-price">${item.price} 🪙</div>
@@ -390,7 +457,7 @@
             db.users[currentUser].inventory.forEach(item => {
                 const sel = selectedUserSkin && selectedUserSkin.instId === item.instId ? 'selected' : '';
                 uGrid.innerHTML += `
-                    <div class="skin-card ${sel}" onclick="selectUserSkin(${item.instId})">
+                    <div class="skin-card ${item.rarity} ${sel}" onclick="selectUserSkin(${item.instId})">
                         <img src="${item.img}">
                         <div class="skin-name">${item.name}</div>
                         <div class="skin-price">${item.price} 🪙</div>
@@ -401,7 +468,7 @@
             skins.forEach(item => {
                 const sel = selectedTargetSkin && selectedTargetSkin.id === item.id ? 'selected' : '';
                 tGrid.innerHTML += `
-                    <div class="skin-card ${sel}" onclick="selectTargetSkin(${item.id})">
+                    <div class="skin-card ${item.rarity} ${sel}" onclick="selectTargetSkin(${item.id})">
                         <img src="${item.img}">
                         <div class="skin-name">${item.name}</div>
                         <div class="skin-price">${item.price} 🪙</div>
